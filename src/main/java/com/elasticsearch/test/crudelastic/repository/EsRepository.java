@@ -1,5 +1,6 @@
 package com.elasticsearch.test.crudelastic.repository;
 
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -8,6 +9,7 @@ import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.GetIndexRequest;
@@ -61,6 +63,15 @@ public class EsRepository {
     public GetIndexResponse indexes(GetIndexRequest getIndexRequest) {
         try {
             return client.indices().get(getIndexRequest, RequestOptions.DEFAULT);
+        } catch (Exception e) {
+            LOGGER.warn("Failed to query Elastic Search" + e);
+        }
+        return null;
+    }
+
+    public AcknowledgedResponse deleteIndex(DeleteIndexRequest deleteIndexRequest) {
+        try {
+            return client.indices().delete(deleteIndexRequest, RequestOptions.DEFAULT);
         } catch (Exception e) {
             LOGGER.warn("Failed to query Elastic Search" + e);
         }

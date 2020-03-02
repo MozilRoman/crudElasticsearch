@@ -63,13 +63,6 @@ public class CSVEntityService {
         return esRepository.delete(deleteRequest);
     }
 
-    public List<String> getIndexes() {
-        GetIndexRequest request = new GetIndexRequest("*");
-        GetIndexResponse response = esRepository.indexes(request);
-        String[] indices = response.getIndices();
-        return Arrays.asList(indices);
-    }
-
     public BulkResponse bulkIngestion(List<String> documents) {
         BulkRequest bulkRequest = new BulkRequest();
         documents.forEach(csvEntity -> {
