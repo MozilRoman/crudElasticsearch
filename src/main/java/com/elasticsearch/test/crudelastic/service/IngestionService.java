@@ -38,6 +38,7 @@ public class IngestionService {
     public void loadCSV() {
         BufferedReader br = null;
         String line = "";
+        boolean firstLine = true;
 
         try {
             br = new BufferedReader(new FileReader(PATH));
@@ -48,6 +49,11 @@ public class IngestionService {
             LocalDateTime startDate = LocalDateTime.now();
 
             while ((line = br.readLine()) != null) {
+                if(firstLine){
+                    firstLine = false;
+                    continue;
+                }
+
                 counter++;
 
                 String[] columns = substringFirstAndLastChar(line).split("\",\""); //  \" mean "
