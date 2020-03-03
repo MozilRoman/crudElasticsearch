@@ -5,7 +5,6 @@ import java.util.List;
 
 public class CSVEntity {
 
-//    private String lastClickedMin;
     private LocalDateTime lastClickedMin;
     private String vendorNewId;
     private Long count;

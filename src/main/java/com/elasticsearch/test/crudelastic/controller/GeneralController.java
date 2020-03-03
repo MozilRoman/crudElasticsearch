@@ -1,6 +1,5 @@
 package com.elasticsearch.test.crudelastic.controller;
 
-import com.elasticsearch.test.crudelastic.service.CSVEntityService;
 import com.elasticsearch.test.crudelastic.service.GeneralService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
