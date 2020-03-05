@@ -14,6 +14,14 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.ScriptQueryBuilder;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.search.aggregations.*;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.SumAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.TopHitsAggregationBuilder;
+import org.elasticsearch.search.aggregations.pipeline.BucketSelectorPipelineAggregationBuilder;
+import org.elasticsearch.search.aggregations.pipeline.SumBucketPipelineAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortOrder;
@@ -21,7 +29,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @Service
@@ -72,20 +82,47 @@ public class CSVEntityService {
         return esRepository.search(searchRequest);
     }
 
+    /**
+     Select csventity.vendorNewId, SUM(count) as amount_of_count
+     from csventity
+     where (csventity.lastClickedMin BETWEEN startDateFromUser AND endDateFromUser) and amount_of_count >= inputCounterFromUser
+     group by csventity.vendorNewId
+     order by amount_of_count DESC
+     */
+    //vendorId = nGLF4dN4Fq201910310GLFILE
     public SearchResponse getMostPopularCSVEntities(LocalDateTime startDate, LocalDateTime endDate, Long minCounter) {
         SearchRequest searchRequest = new SearchRequest(INDEX);
 
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-        searchSourceBuilder.sort(new FieldSortBuilder(COUNT).order(SortOrder.DESC));
+//        searchSourceBuilder.sort(new FieldSortBuilder(COUNT).order(SortOrder.DESC));
 
         BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
-        boolQuery.should(QueryBuilders.rangeQuery(LAST_CLICKED_MIN).from(startDate).to(endDate));
+        boolQuery.must(QueryBuilders.rangeQuery(LAST_CLICKED_MIN).from(startDate).to(endDate));
+//        boolQuery.must(QueryBuilders.matchQuery("vendorId", "nGLF4dN4Fq201910310GLFILE"));
 
         if(!Objects.isNull(minCounter)){
             boolQuery.filter(QueryBuilders.rangeQuery(COUNT).gt(minCounter));
         }
 
+        TermsAggregationBuilder sumCounterAggregation = AggregationBuilders
+                .terms("sum_counts")
+                .field("vendorId");
+
+        SumAggregationBuilder sumAggregationBuilder = AggregationBuilders
+                .sum("total_counter")
+                .field("count");
+        sumCounterAggregation.subAggregation(sumAggregationBuilder);
+        sumCounterAggregation.order(BucketOrder.aggregation("total_counter", false));
+
+
+        Map<String, String> bucketsPathsMap = new HashMap<>();
+        bucketsPathsMap.put("target_field", "total_counter");
+        Script script = new Script("params.target_field > 2109");
+        BucketSelectorPipelineAggregationBuilder bucketSelectorPipelineAggregationBuilder = PipelineAggregatorBuilders.bucketSelector("amount_spent_filter", bucketsPathsMap, script);
+        sumCounterAggregation.subAggregation(bucketSelectorPipelineAggregationBuilder);//todo add sorting by total_counter
+
         searchSourceBuilder.query(boolQuery);
+        searchSourceBuilder.aggregation(sumCounterAggregation);
         searchRequest.source(searchSourceBuilder);
 
         return esRepository.search(searchRequest);
@@ -113,3 +150,6 @@ public class CSVEntityService {
     }
 }
 //https://dzone.com/articles/23-useful-elasticsearch-example-queries
+//https://www.codota.com/code/java/classes/org.elasticsearch.index.query.QueryBuilders -> bool query
+//https://stackoverflow.com/questions/30467211/elastic-search-sum-aggregation-with-group-by-and-where-condition/30467878 -> gropu by
+//https://www.reddit.com/r/elasticsearch/comments/9ygcmt/can_i_sort_by_aggregated_value_in_multi_bucket/ -> bucket path

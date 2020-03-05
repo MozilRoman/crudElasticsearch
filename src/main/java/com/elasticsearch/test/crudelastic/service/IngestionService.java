@@ -105,7 +105,12 @@ public class IngestionService {
     private static CSVEntity parseColumnsToCSVEntity(String[] columns) {
         CSVEntity csvEntity = new CSVEntity();
         csvEntity.setLastClickedMin(LocalDateTime.now());
-        csvEntity.setVendorNewId(columns[1]);
+        if(columns[1].equals("null") || columns[1].equals("NULL")){
+            csvEntity.setVendorNewId("1");
+        }
+        else {
+            csvEntity.setVendorNewId(columns[1]);
+        }
         try {
             csvEntity.setCount(Long.valueOf(columns[2]));
         } catch (Exception e) {
@@ -134,3 +139,4 @@ public class IngestionService {
     }
 
 }
+//https://medium.com/@pankaj_kumar_singh/bulk-insert-on-elasticsearch-7-1-using-java-high-level-rest-client-fdfc9e940a0d
