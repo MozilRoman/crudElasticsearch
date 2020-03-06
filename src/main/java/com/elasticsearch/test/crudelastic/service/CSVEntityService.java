@@ -11,11 +11,17 @@ import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.ScriptQueryBuilder;
+import org.elasticsearch.index.query.TermQueryBuilder;
+import org.elasticsearch.index.reindex.BulkByScrollResponse;
+import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.aggregations.*;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.SumAggregationBuilder;
@@ -29,15 +35,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 @Service
 public class CSVEntityService {
 
-    private static final String INDEX = "newcsventity";
+    //    private static final String INDEX = "newcsventity";
+    private static final String INDEX = "newcsventity1";
     private static final String LAST_CLICKED_MIN = "lastClickedMin";
     private static final String COUNT = "count";
     private final EsRepository esRepository;
@@ -56,10 +60,9 @@ public class CSVEntityService {
         SearchRequest searchRequest = new SearchRequest(INDEX);
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         searchSourceBuilder.query(QueryBuilders.matchAllQuery());
-        if(!Objects.isNull(limit)){
+        if (!Objects.isNull(limit)) {
             searchSourceBuilder.size(limit);
-        }
-        else {
+        } else {
             searchSourceBuilder.size(25);
         }
         searchRequest.source(searchSourceBuilder);
@@ -83,11 +86,11 @@ public class CSVEntityService {
     }
 
     /**
-     Select csventity.vendorNewId, SUM(count) as amount_of_count
-     from csventity
-     where (csventity.lastClickedMin BETWEEN startDateFromUser AND endDateFromUser) and amount_of_count >= inputCounterFromUser
-     group by csventity.vendorNewId
-     order by amount_of_count DESC
+     * Select csventity.vendorNewId, SUM(count) as amount_of_count
+     * from csventity
+     * where (csventity.lastClickedMin BETWEEN startDateFromUser AND endDateFromUser) and amount_of_count >= inputCounterFromUser
+     * group by csventity.vendorNewId
+     * order by amount_of_count DESC
      */
     //vendorId = nGLF4dN4Fq201910310GLFILE
     public SearchResponse getMostPopularCSVEntities(LocalDateTime startDate, LocalDateTime endDate, Long minCounter) {
@@ -100,7 +103,7 @@ public class CSVEntityService {
         boolQuery.must(QueryBuilders.rangeQuery(LAST_CLICKED_MIN).from(startDate).to(endDate));
 //        boolQuery.must(QueryBuilders.matchQuery("vendorId", "nGLF4dN4Fq201910310GLFILE"));
 
-        if(!Objects.isNull(minCounter)){
+        if (!Objects.isNull(minCounter)) {
             boolQuery.filter(QueryBuilders.rangeQuery(COUNT).gt(minCounter));
         }
 
@@ -128,8 +131,35 @@ public class CSVEntityService {
         return esRepository.search(searchRequest);
     }
 
-    public String updateCSVEntity(CSVEntity csvEntity) {//todo
-        return null;
+    public UpdateResponse updateCSVEntityById(String field, String newValue, String id) {//need test
+        UpdateRequest updateRequest = new UpdateRequest(INDEX, id);
+        Map<String, Object> jsonMap = new HashMap<>();
+        jsonMap.put(field, newValue);
+        updateRequest.doc(jsonMap);
+        return esRepository.update(updateRequest);
+    }
+
+    /**
+     * UPDATE csventity
+     * SET csventity.vendorId = '1'
+     * WHERE csventity.vendorId = 'null';
+     */
+    public BulkByScrollResponse updateCSVEntitiesByQuery(String field, String oldValue, String newValue) {
+        UpdateByQueryRequest request = new UpdateByQueryRequest(INDEX);
+
+        request.setConflicts("proceed");
+//        request.setQuery(new TermQueryBuilder("vendorId", "NULL"));
+
+        //look like: (ctx._source.field == 'oldValue') {ctx._source.field = 'newValue';}
+        String query = "if (ctx._source." + field + " == '" + oldValue + "') {ctx._source." + field + " = " + newValue + ";}";
+
+        request.setScript(
+                new Script(
+                        ScriptType.INLINE, "painless",
+                        query,
+                        Collections.emptyMap()));// check: maybe we can substitute query to Map
+
+        return esRepository.updateByQuery(request);
     }
 
     public DeleteResponse deleteCSVEntityById(String id) {

@@ -49,7 +49,7 @@ public class IngestionService {
             LocalDateTime startDate = LocalDateTime.now();
 
             while ((line = br.readLine()) != null) {
-                if(firstLine){
+                if (firstLine) {
                     firstLine = false;
                     continue;
                 }
@@ -61,12 +61,13 @@ public class IngestionService {
 
                 if (counter % batch == 0) {
                     performBulkIngestion(butchListToIngestion);
+                    LOGGER.info("Saved " + counter + " entity");
                 } else {
                     butchListToIngestion.add(mapper.writeValueAsString(csvEntity));
                 }
 
             }
-            if(!butchListToIngestion.isEmpty()){
+            if (!butchListToIngestion.isEmpty()) {
                 performBulkIngestion(butchListToIngestion);
                 LOGGER.info("Saved " + counter + " entity");
             }
@@ -97,18 +98,17 @@ public class IngestionService {
         return word.substring(1, word.length() - 1);
     }
 
-    private void performBulkIngestion(List<String> butchListToIngestion){
+    private void performBulkIngestion(List<String> butchListToIngestion) {
         csvEntityService.bulkIngestion(butchListToIngestion);
         butchListToIngestion.clear();
     }
 
     private static CSVEntity parseColumnsToCSVEntity(String[] columns) {
         CSVEntity csvEntity = new CSVEntity();
-        csvEntity.setLastClickedMin(LocalDateTime.now());
-        if(columns[1].equals("null") || columns[1].equals("NULL")){
+        csvEntity.setLastClickedMin(LocalDateTime.now());//todo make correct parsing
+        if (columns[1].equals("null") || columns[1].equals("NULL")) {
             csvEntity.setVendorNewId("1");
-        }
-        else {
+        } else {
             csvEntity.setVendorNewId(columns[1]);
         }
         try {
