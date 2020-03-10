@@ -27,13 +27,13 @@ public class CSVEntityController {
         return csvEntityService.getCSVEntities(limit);
     }
 
-    @GetMapping("/csventity/searchbyfieldwithmatchquery")//todo rename endpoint
+    @GetMapping("/csventity/searchmatchquery")
     public SearchResponse getCSVEntitiesByFieldWithMatchQuery(@RequestParam("field") String field,
                                                               @RequestParam("value") String value) {
         return csvEntityService.getCSVEntitiesByFieldWithMatchQuery(field, value);
     }
 
-    @GetMapping("/csventity/searchbyfieldwithtermquery")
+    @GetMapping("/csventity/searchtermquery")
     public SearchResponse getCSVEntitiesByFieldWithTermQuery(@RequestParam("field") String field,
                                                              @RequestParam("value") String value) {
         return csvEntityService.getCSVEntitiesByFieldWithTermQuery(field, value);
