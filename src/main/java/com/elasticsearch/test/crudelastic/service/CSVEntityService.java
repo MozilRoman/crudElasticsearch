@@ -44,6 +44,9 @@ public class CSVEntityService {
     private static final String INDEX = "newcsventity1";
     private static final String LAST_CLICKED_MIN = "lastClickedMin";
     private static final String COUNT = "count";
+    private static final String SUM_COUNTS = "sum_counts";
+    private static final String VENDOR_ID = "vendorId";
+    private static final String TOTAL_COUNTER = "total_counter";
     private final EsRepository esRepository;
 
     @Autowired
@@ -97,32 +100,27 @@ public class CSVEntityService {
         SearchRequest searchRequest = new SearchRequest(INDEX);
 
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-//        searchSourceBuilder.sort(new FieldSortBuilder(COUNT).order(SortOrder.DESC));
 
         BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
         boolQuery.must(QueryBuilders.rangeQuery(LAST_CLICKED_MIN).from(startDate).to(endDate));
-//        boolQuery.must(QueryBuilders.matchQuery("vendorId", "nGLF4dN4Fq201910310GLFILE"));
-
-        if (!Objects.isNull(minCounter)) {
-            boolQuery.filter(QueryBuilders.rangeQuery(COUNT).gt(minCounter));
-        }
 
         TermsAggregationBuilder sumCounterAggregation = AggregationBuilders
-                .terms("sum_counts")
-                .field("vendorId");
+                .terms(SUM_COUNTS)
+                .field(VENDOR_ID);
 
         SumAggregationBuilder sumAggregationBuilder = AggregationBuilders
-                .sum("total_counter")
-                .field("count");
+                .sum(TOTAL_COUNTER)
+                .field(COUNT);
         sumCounterAggregation.subAggregation(sumAggregationBuilder);
-        sumCounterAggregation.order(BucketOrder.aggregation("total_counter", false));
+        sumCounterAggregation.order(BucketOrder.aggregation(TOTAL_COUNTER, false));
 
-
-        Map<String, String> bucketsPathsMap = new HashMap<>();
-        bucketsPathsMap.put("target_field", "total_counter");
-        Script script = new Script("params.target_field > 2109");
-        BucketSelectorPipelineAggregationBuilder bucketSelectorPipelineAggregationBuilder = PipelineAggregatorBuilders.bucketSelector("amount_spent_filter", bucketsPathsMap, script);
-        sumCounterAggregation.subAggregation(bucketSelectorPipelineAggregationBuilder);//todo add sorting by total_counter
+        if (!Objects.isNull(minCounter)) {
+            Map<String, String> bucketsPathsMap = new HashMap<>();
+            bucketsPathsMap.put("target_field", TOTAL_COUNTER);
+            Script script = new Script("params.target_field > " + minCounter);//minCounter=2109
+            BucketSelectorPipelineAggregationBuilder bucketSelectorPipelineAggregationBuilder = PipelineAggregatorBuilders.bucketSelector("amount_spent_filter", bucketsPathsMap, script);
+            sumCounterAggregation.subAggregation(bucketSelectorPipelineAggregationBuilder);
+        }
 
         searchSourceBuilder.query(boolQuery);
         searchSourceBuilder.aggregation(sumCounterAggregation);
@@ -148,7 +146,6 @@ public class CSVEntityService {
         UpdateByQueryRequest request = new UpdateByQueryRequest(INDEX);
 
         request.setConflicts("proceed");
-//        request.setQuery(new TermQueryBuilder("vendorId", "NULL"));
 
         //look like: (ctx._source.field == 'oldValue') {ctx._source.field = 'newValue';}
         String query = "if (ctx._source." + field + " == '" + oldValue + "') {ctx._source." + field + " = " + newValue + ";}";
