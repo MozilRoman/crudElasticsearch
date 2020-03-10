@@ -27,3 +27,4 @@ dependencies {
 test {
 	useJUnitPlatform()
 }
+//https://github.com/tkgregory/maven-to-gradle/blob/master/build.gradle
