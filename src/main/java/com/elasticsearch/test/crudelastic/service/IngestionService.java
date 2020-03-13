@@ -7,20 +7,19 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class IngestionService {
 
-    private static String PATH = "C:\\Projects\\REFI_INFO\\ftp\\csv\\mr_clicks_export_indexattr_nov19.csv";// todo move to resources
+    private static final String PATH = "test.csv";
     private static final String CSV_DELIMITER = ",";
     private static final Logger LOGGER = LoggerFactory.getLogger(IngestionService.class);
     private static final Integer DEFAULT_ENTITY_ELEMENTS_LIST = 1;
@@ -41,7 +40,11 @@ public class IngestionService {
         boolean firstLine = true;
 
         try {
-            br = new BufferedReader(new FileReader(PATH));
+            ClassLoader classloader = Thread.currentThread().getContextClassLoader();
+            InputStream inputStream = classloader.getResourceAsStream(PATH);
+            InputStreamReader streamReader = new InputStreamReader(Objects.requireNonNull(inputStream), StandardCharsets.UTF_8);
+
+            br = new BufferedReader(streamReader);
 
             int batch = 1000;
             int counter = 0;// Counter to check how many rows have been processed
@@ -65,7 +68,6 @@ public class IngestionService {
                 } else {
                     butchListToIngestion.add(mapper.writeValueAsString(csvEntity));
                 }
-
             }
             if (!butchListToIngestion.isEmpty()) {
                 performBulkIngestion(butchListToIngestion);
