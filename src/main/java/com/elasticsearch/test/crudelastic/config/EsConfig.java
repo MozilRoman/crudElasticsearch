@@ -18,3 +18,4 @@ public class EsConfig {
         return client;
     }
 }
+//https://stackoverflow.com/questions/46854919/noclassdeffounderror-error-creating-resthighlevelclient-bean

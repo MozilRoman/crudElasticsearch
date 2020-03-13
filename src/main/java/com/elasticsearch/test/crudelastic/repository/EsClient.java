@@ -10,26 +10,29 @@ import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.master.AcknowledgedResponse;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
+import org.elasticsearch.index.reindex.BulkByScrollResponse;
+import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Repository;
 
 //@Repository
 @Component
-public class EsRepository {
+public class EsClient {
     //https://stackoverflow.com/questions/46854919/noclassdeffounderror-error-creating-resthighlevelclient-bean
 
     private final RestHighLevelClient client;
-    private static final Logger LOGGER = LoggerFactory.getLogger(EsRepository.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(EsClient.class);
 
     @Autowired
-    public EsRepository(RestHighLevelClient client) {
+    public EsClient(RestHighLevelClient client) {
         this.client = client;
     }
 
@@ -45,6 +48,24 @@ public class EsRepository {
     public SearchResponse search(SearchRequest searchRequest) {
         try {
             return client.search(searchRequest, RequestOptions.DEFAULT);//todo make QueryBuilder and take out duplication with RequestOptions.DEFAULT
+        } catch (Exception e) {
+            LOGGER.warn("Failed to query Elastic Search" + e);
+        }
+        return null;
+    }
+
+    public UpdateResponse update(UpdateRequest updateRequest) {
+        try {
+            return client.update(updateRequest, RequestOptions.DEFAULT);//todo make QueryBuilder and take out duplication with RequestOptions.DEFAULT
+        } catch (Exception e) {
+            LOGGER.warn("Failed to query Elastic Search" + e);
+        }
+        return null;
+    }
+
+    public BulkByScrollResponse updateByQuery(UpdateByQueryRequest updateByQueryRequest) {
+        try {
+            return client.updateByQuery(updateByQueryRequest, RequestOptions.DEFAULT);//todo make QueryBuilder and take out duplication with RequestOptions.DEFAULT
         } catch (Exception e) {
             LOGGER.warn("Failed to query Elastic Search" + e);
         }

@@ -1,0 +1,15 @@
+
+POST method
+
+http://localhost:9200/newcsventity1/_mapping
+Content-Type : application/json
+
+body:
+{
+  "properties": {
+    "vendorId": {
+      "type":     "text",
+      "fielddata": true
+    }
+  }
+}
