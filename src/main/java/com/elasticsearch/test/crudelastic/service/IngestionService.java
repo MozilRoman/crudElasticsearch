@@ -38,11 +38,10 @@ public class IngestionService {
         BufferedReader br = null;
         String line = "";
         boolean firstLine = true;
+        ClassLoader classloader = Thread.currentThread().getContextClassLoader();
 
-        try {
-            ClassLoader classloader = Thread.currentThread().getContextClassLoader();
-            InputStream inputStream = classloader.getResourceAsStream(PATH);
-            InputStreamReader streamReader = new InputStreamReader(Objects.requireNonNull(inputStream), StandardCharsets.UTF_8);
+        try (InputStream inputStream = classloader.getResourceAsStream(PATH);
+             InputStreamReader streamReader = new InputStreamReader(Objects.requireNonNull(inputStream), StandardCharsets.UTF_8)) {
 
             br = new BufferedReader(streamReader);
 
